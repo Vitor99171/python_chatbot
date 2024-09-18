@@ -35,26 +35,28 @@ def dialogflow():
 
     # Tratar diferentes ações baseadas na intent detectada
     if action == 'defaultWelcomeIntent':
-        response = format_response(['Hi, how can I help you today?'])
+        response = format_response(['Olá! Como posso te ajudar hoje? Escolha uma das opções.'])
 
-    elif action == 'input.welcome':
-        response = format_response(['testando resposta', 'apareceu aii?'])
+    elif action == 'agendar_servico':
+        response = format_response(['Para agendar um serviço como RG, CNH ou Passaporte, acesse nosso portal de agendamentos.'])
 
-    elif action == 'teste.action':
-        # Tratar o callback_data com mais cuidado, para lidar com None
-        if callback_data == 'opcao_1':
-            response = format_response(['opção 1 selecionada'])
-        elif callback_data == 'opcao_2':
-            response = format_response(['opção 2 selecionada'])
-        else:
-            logger.warning(f'callback_data não reconhecido: {callback_data}')
-            response = format_response(['Nenhuma opção válida foi selecionada.'])
+    elif action == 'horario_atendimento':
+        response = format_response(['Os horários de atendimento das centrais são de segunda a sexta, das 8h às 17h.'])
 
-    elif action == 'inputUnknown':
-        response = format_response(['Sorry, I did not understand that clearly.'])
+    elif action == 'localizacao_central':
+        response = format_response(['Você pode encontrar a central mais próxima usando nosso localizador online.'])
+
+    elif action == 'status_solicitacao':
+        response = format_response(['Para verificar o status da sua solicitação, forneça o número do protocolo no site.'])
+
+    elif action == 'resolucao_problemas':
+        response = format_response(['Caso tenha perdido um documento ou enfrentado problemas com o pagamento, visite nossa página de suporte.'])
+
+    elif action == 'suporte_tecnico':
+        response = format_response(['Se você está com dificuldades para acessar o sistema de agendamentos, entre em contato com o suporte técnico.'])
 
     else:
-        response = format_response([f'No handler for the action name {action}.'])
+        response = format_response([f'Ação não reconhecida: {action}.'])
 
     return response
 
