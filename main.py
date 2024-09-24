@@ -1,5 +1,6 @@
 import os
 import logging
+from typing import List
 from flask import Flask, request, jsonify
 
 app = Flask(__name__)
@@ -12,66 +13,52 @@ logger = logging.getLogger(__name__)
 def home():
     return 'OK', 200
 
-def format_response(text: str) -> dict:
-    """Formata a resposta para o Dialogflow e o Telegram."""
-    return {
-        "fulfillmentMessages": [
-            {
-                "platform": "TELEGRAM",
-                "text": {
-                    "text": [text]
-                }
-            }
-        ]
-    }
+def format_response(texts: List[str]) -> jsonify:
+    return jsonify({"fulfillmentMessages": [{"text": {"text": texts}}]})
 
 @app.route('/dialogflow', methods=['POST'])
 def dialogflow():
-    try:
-        data = request.get_json(force=True)
+    data = request.get_json()
 
-        # Verificar a estrutura recebida
-        logger.info(f"Recebido JSON: {data}")
+    # Verificar a estrutura recebida
+    logger.info(f"Recebido JSON: {data}")
 
-        # Verificar se há dados de callback_query no payload
-        original_request = data.get('originalDetectIntentRequest', {})
-        callback_query = original_request.get('payload', {}).get('data', {}).get('callback_query', {})
-        callback_data = callback_query.get('data', None)
+    action = data['queryResult'].get('action', 'Unknown Action')
+    parameters = data['queryResult'].get('parameters', {})
+    
+    # Extrair callback_data corretamente da requisição do Telegram
+    callback_data = data['originalDetectIntentRequest']['payload']['data']['callback_query'].get('data')
 
-        action = data['queryResult'].get('action', 'Unknown Action')
+    # Usando logs ao invés de print
+    logger.info(f"action: {action}")
+    logger.info(f"callback_data: {callback_data}")
 
-        logger.info(f"Action: {action}")
-        logger.info(f"Callback Data: {callback_data}")
+    # Tratar diferentes ações baseadas na intent detectada
+    if action == 'defaultWelcomeIntent':
+        response = format_response(['Olá! Como posso te ajudar hoje? Escolha uma das opções.'])
 
-        # Tratar diferentes ações baseadas na intent detectada
-        if action == 'defaultWelcomeIntent':
-            response = format_response('Como posso ajudar você hoje?')
+    elif action == 'agendar_servico':
+        response = format_response(['Para agendar um serviço como RG, CNH ou Passaporte, acesse nosso portal de agendamentos.'])
 
-        # Processar cliques nos botões
-        elif callback_data:
-            if callback_data == 'agendar_servico':
-                response = format_response('Você escolheu "Agendar Serviço". Para prosseguir, acesse nosso portal de agendamentos.')
-            elif callback_data == 'horario_atendimento':
-                response = format_response('Você escolheu "Horário de Atendimento". Nosso atendimento é de segunda a sexta, das 8h às 17h.')
-            elif callback_data == 'localizacao_central':
-                response = format_response('Você escolheu "Localização da Central". Use nosso localizador online para encontrar a central mais próxima.')
-            elif callback_data == 'status_solicitacao':
-                response = format_response('Você escolheu "Status de Solicitação". Forneça o número do protocolo para verificar o status no nosso site.')
-            elif callback_data == 'resolucao_problemas':
-                response = format_response('Você escolheu "Resolução de Problemas". Visite nossa página de suporte para resolver problemas.')
-            elif callback_data == 'suporte_tecnico':
-                response = format_response('Você escolheu "Suporte Técnico". Contate nosso suporte técnico em caso de dificuldades de acesso.')
-            else:
-                response = format_response('Opção não reconhecida.')
+    elif action == 'horario_atendimento':
+        response = format_response(['Os horários de atendimento das centrais são de segunda a sexta, das 8h às 17h.'])
 
-        else:
-            response = format_response(f'Ação não reconhecida: {action}.')
+    elif action == 'localizacao_central':
+        response = format_response(['Você pode encontrar a central mais próxima usando nosso localizador online.'])
 
-    except Exception as e:
-        logger.error(f"Erro ao processar a requisição: {str(e)}")
-        response = format_response('Houve um erro ao processar sua solicitação. Por favor, tente novamente.')
+    elif action == 'status_solicitacao':
+        response = format_response(['Para verificar o status da sua solicitação, forneça o número do protocolo no site.'])
 
-    return jsonify(response)
+    elif action == 'resolucao_problemas':
+        response = format_response(['Caso tenha perdido um documento ou enfrentado problemas com o pagamento, visite nossa página de suporte.'])
+
+    elif action == 'suporte_tecnico':
+        response = format_response(['Se você está com dificuldades para acessar o sistema de agendamentos, entre em contato com o suporte técnico.'])
+
+    else:
+        response = format_response([f'Ação não reconhecida: {action}.'])
+
+    return response
 
 if __name__ == '__main__':
     # Pegar a porta da variável de ambiente ou usar 5000 como padrão
