@@ -66,4 +66,7 @@ def dialogflow():
     return response
 
 if __name__ == '__main__':
-    # Pegar a porta da variável de ambiente ou
+    # Pegar a porta da variável de ambiente ou usar 5000 como padrão
+    port = int(os.environ.get('PORT', 5000))
+    logger.info(f"Starting app on port {port}")
+    app.run(host='0.0.0.0', port=port)
