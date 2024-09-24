@@ -13,8 +13,18 @@ logger = logging.getLogger(__name__)
 def home():
     return 'OK', 200
 
-def format_response(texts: List[str]) -> jsonify:
-    return jsonify({"fulfillmentMessages": [{"text": {"text": texts}}]})
+def format_response(text: str) -> dict:
+    """Formata a resposta para o Dialogflow e o Telegram."""
+    return {
+        "fulfillmentMessages": [
+            {
+                "platform": "TELEGRAM",
+                "text": {
+                    "text": [text]
+                }
+            }
+        ]
+    }
 
 @app.route('/dialogflow', methods=['POST'])
 def dialogflow():
@@ -26,44 +36,40 @@ def dialogflow():
 
         action = data['queryResult'].get('action', 'Unknown Action')
         parameters = data['queryResult'].get('parameters', {})
-        
-        # Verificar se a requisição contém o payload do Telegram corretamente
-        callback_data = data.get('originalDetectIntentRequest', {}).get('payload', {}).get('data', {}).get('callback_query', {}).get('data')
 
-        # Usando logs ao invés de print
-        logger.info(f"action: {action}")
-        logger.info(f"callback_data: {callback_data}")
+        # Extrair o callback_data da requisição do Telegram
+        callback_data = data.get('originalDetectIntentRequest', {}).get('payload', {}).get('data', {}).get('callback_query', {}).get('data')
 
         # Tratar diferentes ações baseadas na intent detectada
         if action == 'defaultWelcomeIntent':
-            response = format_response(['Olá! Como posso te ajudar hoje? Escolha uma das opções.'])
+            response = format_response('Olá! Como posso te ajudar hoje? Escolha uma das opções.')
 
         elif action == 'agendar_servico':
-            response = format_response(['Para agendar um serviço como RG, CNH ou Passaporte, acesse nosso portal de agendamentos.'])
+            response = format_response('Para agendar um serviço como RG, CNH ou Passaporte, acesse nosso portal de agendamentos.')
 
         elif action == 'horario_atendimento':
-            response = format_response(['Os horários de atendimento das centrais são de segunda a sexta, das 8h às 17h.'])
+            response = format_response('Os horários de atendimento das centrais são de segunda a sexta, das 8h às 17h.')
 
         elif action == 'localizacao_central':
-            response = format_response(['Você pode encontrar a central mais próxima usando nosso localizador online.'])
+            response = format_response('Você pode encontrar a central mais próxima usando nosso localizador online.')
 
         elif action == 'status_solicitacao':
-            response = format_response(['Para verificar o status da sua solicitação, forneça o número do protocolo no site.'])
+            response = format_response('Para verificar o status da sua solicitação, forneça o número do protocolo no site.')
 
         elif action == 'resolucao_problemas':
-            response = format_response(['Caso tenha perdido um documento ou enfrentado problemas com o pagamento, visite nossa página de suporte.'])
+            response = format_response('Caso tenha perdido um documento ou enfrentado problemas com o pagamento, visite nossa página de suporte.')
 
         elif action == 'suporte_tecnico':
-            response = format_response(['Se você está com dificuldades para acessar o sistema de agendamentos, entre em contato com o suporte técnico.'])
+            response = format_response('Se você está com dificuldades para acessar o sistema de agendamentos, entre em contato com o suporte técnico.')
 
         else:
-            response = format_response([f'Ação não reconhecida: {action}.'])
+            response = format_response(f'Ação não reconhecida: {action}.')
 
     except Exception as e:
         logger.error(f"Erro ao processar a requisição: {str(e)}")
-        response = format_response(['Houve um erro ao processar sua solicitação. Por favor, tente novamente.'])
+        response = format_response('Houve um erro ao processar sua solicitação. Por favor, tente novamente.')
 
-    return response
+    return jsonify(response)
 
 if __name__ == '__main__':
     # Pegar a porta da variável de ambiente ou usar 5000 como padrão
